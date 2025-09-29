@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pronunciation Feedback Tutor</title>
+    <style>
+        /* --- General Styling --- */
+        :root {
+            --primary-color: #0b3d91;
+            --secondary-color: #104aaf;
+            --gradient-start: #89f7fe;
+            --gradient-end: #66a6ff;
+            --light-gray: #f9f9f9;
+            --medium-gray: #ccc;
+            --dark-gray: #333;
+            --danger-color: #d9534f;
+            --success-color: #28a745;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            padding: 20px;
+            color: var(--dark-gray);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        /* --- Main Container & Typography --- */
+        .container {
+            max-width: 650px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        h1, h2 {
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 25px;
+            color: var(--primary-color);
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.7);
+        }
+
+        h2 {
+            margin-top: 35px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 25px;
+        }
+        
+        .marquee-style {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding: 8px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 8px;
+            border: 1px solid var(--primary-color);
+        }
+        
+        .visualizer-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .visualizer-wrapper h3 {
+            text-align: center;
+            font-size: 1em;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        /* --- Buttons & Inputs --- */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            font-size: 16px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            user-select: none;
+            flex-grow: 1;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #9bb3d8;
+            cursor: not-allowed;
+        }
+        
+        #clearNativeAudioBtn, #clearDocBtn {
+             background: var(--danger-color);
+        }
+
+        #recognizeSpeechBtn {
+            background: var(--success-color);
+        }
+
+        .file-input-group {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input[type="file"] {
+            flex-grow: 1;
+        }
+
+        .time-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--light-gray);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .time-controls label {
+            font-weight: 600;
+        }
+        .time-controls input[type="number"] {
+            width: 70px;
+            padding: 5px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 5px;
+        }
+
+        /* --- Feedback & Result Areas --- */
+        #feedback, #speechResult {
+            text-align: center;
+            font-weight: 600;
+            min-height: 24px;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background: #e7f3fe;
+            color: #0b3d91;
+        }
+
+        /* --- Audio & Document Displays --- */
+        #frequencyVisualizer {
+            width: 100%;
+            height: 150px; /* Increased height for labels */
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            background-color: var(--light-gray);
+        }
+
+        #history, #nativeAudioList {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .record-item, .native-audio-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            background: var(--light-gray);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .record-item button {
+            background: var(--danger-color);
+            padding: 5px 10px;
+            font-size: 12px;
+            flex-grow: 0;
+        }
+
+        .record-num {
+            flex-shrink: 0;
+            color: var(--primary-color);
+        }
+
+        audio {
+            flex-grow: 1;
+            outline: none;
+        }
+
+        #docDisplay {
+            margin-top: 10px;
+            background: var(--light-gray);
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            min-height: 100px;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 250px;
+            color: var(--dark-gray);
+            font-size: 16px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        
+        #docDisplay:empty::before {
+            content: 'Your uploaded .txt document will appear here.';
+            color: #888;
+            font-style: italic;
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 640px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+            .button-group button, .file-input-group button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <marquee class="marquee-style">SIP PROJECT 2025</marquee>
+        <h1>Pronunciation Feedback Tutor</h1>
+    </header>
+
+    <main>
+        <!-- Section for user recording -->
+        <section>
+            <div class="button-group">
+                <button id="startBtn">Start Recording</button>
+                <button id="stopBtn" disabled>Stop Recording</button>
+            </div>
+            <div class="visualizer-container">
+                <div class="visualizer-wrapper">
+                    <h3>Frequency (Spectrum)</h3>
+                    <canvas id="frequencyVisualizer"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section for native audio reference -->
+        <section>
+             <h2>Native Audio Sample</h2>
+             <div class="file-input-group">
+                <input type="file" id="uploadNativeAudio" accept="audio/*" title="Upload Native Audio"/>
+                <button id="clearNativeAudioBtn" style="display:none;">Clear Audio</button>
+            </div>
+             <div id="nativeAudioList"></div>
+             <div class="time-controls">
+                <label for="startTime">Start (s):</label>
+                <input type="number" id="startTime" value="0" min="0" step="0.1">
+                <label for="endTime">End (s):</label>
+                <input type="number" id="endTime" placeholder="end" min="0" step="0.1">
+            </div>
+            <div class="button-group">
+                 <button id="playRefBtn">Play Native Sample</button>
+                 <button id="stopNativeBtn" disabled>Stop Native Audio</button>
+            </div>
+        </section>
+        
+        <div id="feedback">Your recordings are now saved automatically.</div>
+
+        <!-- Section for speech recognition -->
+        <section>
+            <h2>Pronunciation Check</h2>
+             <button id="recognizeSpeechBtn">Check My Pronunciation</button>
+             <div id="speechResult"></div>
+        </section>
+
+        <!-- Section for recording history -->
+        <section>
+            <h2>Your Recordings</h2>
+            <div id="history"></div>
+            <div class="button-group">
+                <button id="clearHistoryBtn">Clear History</button>
+            </div>
+        </section>
+
+        <!-- Section for document display -->
+        <section>
+            <h2>Reference Text</h2>
+            <div class="file-input-group">
+                <input type="file" id="uploadDocFile" accept=".txt" title="Upload Text Document" />
+                <button id="clearDocBtn" style="display:none;">Clear Document</button>
+            </div>
+            <div id="docDisplay"></div>
+        </section>
+    </main>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Element References ---
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const playRefBtn = document.getElementById('playRefBtn');
+        const feedback = document.getElementById('feedback');
+        const history = document.getElementById('history');
+        const nativeAudioList = document.getElementById('nativeAudioList');
+        const freqCanvas = document.getElementById('frequencyVisualizer');
+        const freqCanvasCtx = freqCanvas.getContext('2d');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const uploadNativeAudio = document.getElementById('uploadNativeAudio');
+        const clearNativeAudioBtn = document.getElementById('clearNativeAudioBtn');
+        const stopNativeBtn = document.getElementById('stopNativeBtn');
+        const uploadDocFile = document.getElementById('uploadDocFile');
+        const clearDocBtn = document.getElementById('clearDocBtn');
+        const speechResult = document.getElementById('speechResult');
+        const recognizeSpeechBtn = document.getElementById('recognizeSpeechBtn');
+        let nativePlaybackTimeout;
+
+        // --- State Variables ---
+        let mediaRecorder;
+        let audioChunks = [];
+        let nativeAudioElements = [];
+        let audioContext;
+        let analyser;
+        let animationFrameId;
+        let sourceNodeMap = new WeakMap();
+
+        // --- IndexedDB for Persistent Storage ---
+        const DB_NAME = 'PronunciationTutorDB';
+        const RECORDING_STORE = 'recordings';
+        const NATIVE_AUDIO_STORE = 'nativeAudio';
+        let db;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onerror = event => reject("Database error: " + event.target.errorCode);
+                request.onsuccess = event => {
+                    db = event.target.result;
+                    resolve(db);
+                };
+                request.onupgradeneeded = event => {
+                    const db = event.target.result;
+                    db.createObjectStore(RECORDING_STORE, { keyPath: 'id', autoIncrement: true });
+                    db.createObjectStore(NATIVE_AUDIO_STORE, { keyPath: 'id' });
+                };
+            });
+        }
+
+        function saveData(storeName, data) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.put(data);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = event => reject("Error saving data: " + event.target.errorCode);
+            });
+        }
+
+        function loadAllData(storeName) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = event => reject("Error loading data: " + event.target.errorCode);
+            });
+        }
+        
+        function deleteData(storeName, id) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = event => reject("Error deleting data: " + event.target.errorCode);
+            });
+        }
+
+        function clearStore(storeName) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = event => reject("Error clearing store: " + event.target.errorCode);
+            });
+        }
+
+
+        // --- Audio Context & Visualization ---
+        const initAudioContext = () => {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048; 
+            }
+        };
+
+        const visualize = (activeSource) => {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            const draw = () => {
+                const isRecording = mediaRecorder && mediaRecorder.state === 'recording';
+                const isPlaying = activeSource instanceof HTMLAudioElement && !activeSource.paused;
+
+                if (!isRecording && !isPlaying) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                    return;
+                }
+                
+                animationFrameId = requestAnimationFrame(draw);
+                
+                analyser.getByteFrequencyData(dataArray);
+                freqCanvasCtx.fillStyle = '#f9f9f9';
+                freqCanvasCtx.fillRect(0, 0, freqCanvas.width, freqCanvas.height);
+                
+                const barWidth = (freqCanvas.width / bufferLength) * 1.5;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = dataArray[i];
+                    freqCanvasCtx.fillStyle = `rgb(11, 61, ${barHeight + 80})`;
+                    freqCanvasCtx.fillRect(x, freqCanvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
+                }
+
+                // Draw Frequency Labels
+                const maxFreq = audioContext.sampleRate / 2;
+                freqCanvasCtx.fillStyle = '#666';
+                freqCanvasCtx.font = '12px Segoe UI';
+                for (let i = 1; i <= 5; i++) {
+                    const freq = i * 2000; // Labels at 2k, 4k, 6k, 8k, 10k Hz
+                    const percent = freq / maxFreq;
+                    const xPos = percent * freqCanvas.width;
+                    freqCanvasCtx.fillText(`${freq/1000}kHz`, xPos, 15);
+                }
+            };
+            draw();
+        };
+
+        // --- Core Functions & Event Handlers ---
+        const audioPlayHandler = (event) => {
+            initAudioContext();
+            const audioElement = event.target;
+            if (!sourceNodeMap.has(audioElement)) {
+                const source = audioContext.createMediaElementSource(audioElement);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                sourceNodeMap.set(audioElement, source);
+            }
+            visualize(audioElement);
+        };
+        const audioPauseHandler = () => { if (animationFrameId) cancelAnimationFrame(animationFrameId); };
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                initAudioContext();
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const newRecording = {
+                        name: `Recording-${Date.now()}`,
+                        audio: audioBlob
+                    };
+                    const id = await saveData(RECORDING_STORE, newRecording);
+                    addRecordingToHistory({ ...newRecording, id });
+                    audioChunks = [];
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                mediaRecorder.start();
+                visualize('microphone');
+                feedback.textContent = 'Recording... 🎤';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } catch (err) {
+                feedback.textContent = 'Could not access microphone.';
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+             if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+             feedback.textContent = 'Recording stopped. ✅';
+             startBtn.disabled = false;
+             stopBtn.disabled = true;
+        });
+
+        uploadNativeAudio.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            await clearStore(NATIVE_AUDIO_STORE);
+            const nativeAudio = { id: 1, name: file.name, audio: file };
+            await saveData(NATIVE_AUDIO_STORE, nativeAudio);
+            loadAndDisplayNativeAudio();
+        });
+
+        clearNativeAudioBtn.addEventListener('click', async () => {
+             await clearStore(NATIVE_AUDIO_STORE);
+             clearNativeAudioUI();
+        });
+        
+        clearHistoryBtn.addEventListener('click', async () => {
+             await clearStore(RECORDING_STORE);
+             history.innerHTML = '';
+             feedback.textContent = 'Recording history cleared.';
+        });
+
+        playRefBtn.addEventListener('click', () => {
+            if (nativeAudioElements.length > 0) {
+                 const audio = nativeAudioElements[0];
+                 const startTime = parseFloat(document.getElementById('startTime').value) || 0;
+                 const endTimeInput = document.getElementById('endTime').value;
+                 const endTime = endTimeInput ? parseFloat(endTimeInput) : audio.duration;
+
+                 if (startTime >= endTime) {
+                     feedback.textContent = "Start time must be less than end time.";
+                     return;
+                 }
+
+                 audio.currentTime = startTime;
+                 audio.play();
+                 playRefBtn.disabled = true;
+                 stopNativeBtn.disabled = false;
+
+                 const duration = (endTime - startTime) * 1000;
+                 if (duration > 0 && isFinite(duration)) {
+                     clearTimeout(nativePlaybackTimeout);
+                     nativePlaybackTimeout = setTimeout(() => { if (!audio.paused) audio.pause(); }, duration);
+                 }
+
+                 const onPauseOrEnd = () => {
+                     playRefBtn.disabled = false;
+                     stopNativeBtn.disabled = true;
+                     clearTimeout(nativePlaybackTimeout);
+                 };
+                 audio.onpause = onPauseOrEnd;
+                 audio.onended = onPauseOrEnd;
+            }
+        });
+        
+        stopNativeBtn.addEventListener('click', () => {
+            if (nativeAudioElements.length > 0 && !nativeAudioElements[0].paused) {
+                nativeAudioElements[0].pause();
+            }
+        });
+
+        // --- UI Helper Functions ---
+        function addAudioElementListeners(audioElement) {
+            audioElement.addEventListener('play', audioPlayHandler);
+            audioElement.addEventListener('pause', audioPauseHandler);
+            audioElement.addEventListener('ended', audioPauseHandler);
+        }
+
+        function addRecordingToHistory(recordingData) {
+            const { name, audio, id } = recordingData;
+            const audioUrl = URL.createObjectURL(audio);
+            const recordItem = document.createElement('div');
+            recordItem.className = 'record-item';
+            recordItem.setAttribute('data-id', id);
+
+            const audioEl = document.createElement('audio');
+            audioEl.controls = true;
+            audioEl.src = audioUrl;
+            addAudioElementListeners(audioEl);
+
+            const recordNum = document.createElement('span');
+            recordNum.className = 'record-num';
+            recordNum.textContent = `Rec: ${id}`;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'X';
+            deleteBtn.onclick = async () => {
+                await deleteData(RECORDING_STORE, id);
+                recordItem.remove();
+            };
+            
+            recordItem.appendChild(recordNum);
+            recordItem.appendChild(audioEl);
+            recordItem.appendChild(deleteBtn);
+            history.appendChild(recordItem);
+        }
+
+        function clearNativeAudioUI() {
+            nativeAudioElements.forEach(audio => URL.revokeObjectURL(audio.src));
+            nativeAudioElements = [];
+            nativeAudioList.innerHTML = '';
+            uploadNativeAudio.value = '';
+            clearNativeAudioBtn.style.display = 'none';
+            playRefBtn.disabled = true;
+            stopNativeBtn.disabled = true;
+        }
+
+        async function loadAndDisplayNativeAudio() {
+            clearNativeAudioUI();
+            const data = await loadAllData(NATIVE_AUDIO_STORE);
+            if (data.length > 0) {
+                const { name, audio } = data[0];
+                const audioUrl = URL.createObjectURL(audio);
+                const item = document.createElement('div');
+                item.className = 'native-audio-item';
+                const audioEl = document.createElement('audio');
+                audioEl.controls = true;
+                audioEl.src = audioUrl;
+                addAudioElementListeners(audioEl);
+                item.innerHTML = `<span>${name}</span>`;
+                item.appendChild(audioEl);
+                nativeAudioList.appendChild(item);
+                nativeAudioElements.push(audioEl);
+                clearNativeAudioBtn.style.display = 'inline-block';
+                playRefBtn.disabled = false;
+            }
+        }
+        
+        // --- On Page Load ---
+        async function initializeApp() {
+            await initDB();
+            const recordings = await loadAllData(RECORDING_STORE);
+            recordings.forEach(addRecordingToHistory);
+            await loadAndDisplayNativeAudio();
+        }
+
+        initializeApp();
+
+        // --- Unchanged Functions ---
+        uploadDocFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                docDisplay.textContent = e.target.result;
+                clearDocBtn.style.display = 'inline-block';
+            };
+            if (file.type === "text/plain") reader.readAsText(file);
+            else {
+                docDisplay.textContent = `Preview is only for .txt files.`;
+                clearDocBtn.style.display = 'none';
+            }
+        });
+        clearDocBtn.addEventListener('click', () => {
+            docDisplay.textContent = '';
+            uploadDocFile.value = '';
+            clearDocBtn.style.display = 'none';
+        });
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.onresult = (event) => { speechResult.textContent = `Recognized: "${event.results[0][0].transcript}"`; };
+            recognition.onerror = (event) => { speechResult.textContent = 'Speech recognition error: ' + event.error; };
+            recognition.onend = () => { recognizeSpeechBtn.disabled = false; recognizeSpeechBtn.textContent = 'Check My Pronunciation';};
+            recognizeSpeechBtn.addEventListener('click', () => {
+                recognizeSpeechBtn.disabled = true;
+                speechResult.textContent = 'Listening...';
+                recognizeSpeechBtn.textContent = 'Listening...';
+                recognition.start();
+            });
+        } else {
+            recognizeSpeechBtn.disabled = true;
+            speechResult.textContent = 'Speech recognition is not supported in this browser.';
+        }
+    });
+</script>
+
+</body>
+</html>
+
